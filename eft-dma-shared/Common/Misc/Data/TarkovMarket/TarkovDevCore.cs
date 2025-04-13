@@ -19,7 +19,7 @@ namespace eft_dma_shared.Common.Misc.Data.TarkovMarket
                 { "query",
                 """
                 {
-                    items(gameMode:pve) { 
+                    items(lang:zh) { 
                         id 
                         name 
                         shortName 
