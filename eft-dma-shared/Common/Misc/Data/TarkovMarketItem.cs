@@ -60,27 +60,27 @@ namespace eft_dma_shared.Common.Misc.Data
         /// Is a Medical Item.
         /// </summary>
         [JsonIgnore]
-        public bool IsMed => Tags.Contains("Meds");
+        public bool IsMed => Tags.Contains("药品");
         /// <summary>
         /// Is a Food Item.
         /// </summary>
         [JsonIgnore]
-        public bool IsFood => Tags.Contains("Food and drink");
+        public bool IsFood => Tags.Contains("食物和饮料");
         /// <summary>
         /// Is a backpack.
         /// </summary>
         [JsonIgnore]
-        public bool IsBackpack => Tags.Contains("Backpack");
+        public bool IsBackpack => Tags.Contains("背包");
         /// <summary>
         /// Is a Weapon Item.
         /// </summary>
         [JsonIgnore]
-        public bool IsWeapon => Tags.Contains("Weapon");
+        public bool IsWeapon => Tags.Contains("武器");
         /// <summary>
         /// Is Currency (Roubles,etc.)
         /// </summary>
         [JsonIgnore]
-        public bool IsCurrency => Tags.Contains("Money");
+        public bool IsCurrency => Tags.Contains("钱");
 
         /// <summary>
         /// This field is set if this item has a special filter.

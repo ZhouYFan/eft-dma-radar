@@ -26,7 +26,7 @@ namespace eft_dma_radar.UI.SKWidgetControl
             TextSize = 12,
             TextEncoding = SKTextEncoding.Utf8,
             IsAntialias = true,
-            Typeface = SKTypeface.FromFamilyName("Consolas"), // Do NOT change this font
+            Typeface = CustomFonts.GetChineseTypeface(),
             FilterQuality = SKFilterQuality.High
         };
 
