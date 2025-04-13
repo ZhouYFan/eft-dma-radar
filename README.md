@@ -16,6 +16,8 @@ ESP Ammo Counter is LimeGreen - Can be changed in SKPain.cs
 
 Flea Prices on loot update every 4HR's - Price updates are for PvE - You can change this in TarkovDevCores.cs by removing (gameMode:pve) on line 22. - This update is from LONE
 
+Chinese support
+
 ## Future Changes
 
 Any updates Mambo makes
