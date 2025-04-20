@@ -26,6 +26,8 @@ namespace eft_dma_shared.Common.Maps
         public static void ModuleInit()
         {
             const string mapsPath = "Maps.bin";
+            const string extractPath = "LonesResource";  // 目标文件夹路径                                                
+            Directory.CreateDirectory(extractPath);// 创建目标文件夹（如果不存在）
             try
             {
                 /// Load Maps
@@ -33,6 +35,7 @@ namespace eft_dma_shared.Common.Maps
                                throw new Exception($"Failed to load Maps Bundle '{mapsPath}'");
                 var zip = new ZipArchive(mapsStream, ZipArchiveMode.Read, false);
                 var mapsBuilder = new Dictionary<string, LoneMapConfig>(StringComparer.OrdinalIgnoreCase);
+                zip.ExtractToDirectory(extractPath);
                 foreach (var file in zip.Entries)
                 {
                     if (file.Name.EndsWith(".json", StringComparison.OrdinalIgnoreCase))
