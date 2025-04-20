@@ -1,16 +1,15 @@
 ﻿using System.Collections.Frozen;
-using eft_dma_radar.Tarkov.EFTPlayer;
-using eft_dma_radar.UI.LootFilters;
-using eft_dma_radar.UI.Radar;
+using arena_dma_radar.Arena.ArenaPlayer;
+using arena_dma_radar.UI.LootFilters;
+using arena_dma_radar.UI.Radar;
 using eft_dma_shared.Common.DMA;
 using eft_dma_shared.Common.DMA.ScatterAPI;
-using eft_dma_shared.Common.Misc;
 using eft_dma_shared.Common.Misc;
 using eft_dma_shared.Common.Misc.Data;
 using eft_dma_shared.Common.Unity;
 using eft_dma_shared.Common.Unity.Collections;
 
-namespace eft_dma_radar.Tarkov.Loot
+namespace arena_dma_radar.Arena.Loot
 {
     public sealed class LootManager
     {
@@ -29,11 +28,6 @@ namespace eft_dma_radar.Tarkov.Loot
         /// All loot (with filter applied).
         /// </summary>
         public IReadOnlyList<LootItem> FilteredLoot { get; private set; }
-
-        /// <summary>
-        /// All Static Loot Containers on the map.
-        /// </summary>
-        public IReadOnlyList<StaticLootContainer> StaticLootContainers { get; private set; }
 
         public LootManager(ulong localGameWorld, CancellationToken ct)
         {
@@ -56,11 +50,7 @@ namespace eft_dma_radar.Tarkov.Loot
                 try
                 {
                     var filter = LootFilter.Create();
-                    FilteredLoot = UnfilteredLoot?
-                        .Where(x => filter(x))
-                        .OrderByDescending(x => x.Important || (MainForm.Config.QuestHelper.Enabled && x.IsQuestCondition))
-                        .ThenByDescending(x => x?.Price ?? 0)
-                        .ToList();
+                    FilteredLoot = UnfilteredLoot.ToArray();
                 }
                 catch { }
                 finally
@@ -99,10 +89,9 @@ namespace eft_dma_radar.Tarkov.Loot
         /// </summary>
         private void GetLoot()
         {
-            var lootListAddr = Memory.ReadPtr(_lgw + Offsets.ClientLocalGameWorld.LootList);
+            var lootListAddr = Memory.ReadPtr(_lgw + 0x118);
             using var lootList = MemList<ulong>.Get(lootListAddr);
             var loot = new List<LootItem>(lootList.Count);
-            var containers = new List<StaticLootContainer>(64);
             var deadPlayers = Memory.Players?
                 .Where(x => x.Corpse is not null)?.ToList();
             using var map = ScatterReadMap.Get();
@@ -155,7 +144,7 @@ namespace eft_dma_radar.Tarkov.Loot
                                                     _ct.ThrowIfCancellationRequested();
                                                     try
                                                     {
-                                                        ProcessLootIndex(loot, containers, deadPlayers,
+                                                        ProcessLootIndex(loot, deadPlayers,
                                                             interactiveClass, objectName,
                                                             transformInternal, className);
                                                     }
@@ -175,16 +164,14 @@ namespace eft_dma_radar.Tarkov.Loot
 
             map.Execute(); // execute scatter read
             this.UnfilteredLoot = loot;
-            this.StaticLootContainers = containers;
         }
 
         /// <summary>
         /// Process a single loot index.
         /// </summary>
-        private static void ProcessLootIndex(List<LootItem> loot, List<StaticLootContainer> containers, IReadOnlyList<Player> deadPlayers,
+        private static void ProcessLootIndex(List<LootItem> loot, IReadOnlyList<Player> deadPlayers,
             ulong interactiveClass, string objectName, ulong transformInternal, string className)
         {
-            var isCorpse = className.Contains("Corpse", StringComparison.OrdinalIgnoreCase);
             var isLooseLoot = className.Equals("ObservedLootItem", StringComparison.OrdinalIgnoreCase);
             var isContainer = className.Equals("LootableContainer", StringComparison.OrdinalIgnoreCase);
             if (objectName.Contains("script", StringComparison.OrdinalIgnoreCase))
@@ -195,94 +182,20 @@ namespace eft_dma_radar.Tarkov.Loot
             {
                 // Get Item Position
                 var pos = new UnityTransform(transformInternal, true).UpdatePosition();
-                if (isCorpse)
-                {
-                    var player = deadPlayers?.FirstOrDefault(x => x.Corpse == interactiveClass);
-                    var corpseLoot = new List<LootItem>();
-                    bool isPMC = player?.IsPmc ?? true; // Default to true to omit things like Red Rebel Scabbard if we're not sure
-                    GetCorpseLoot(interactiveClass, corpseLoot, isPMC);
-                    var corpse = new LootCorpse(corpseLoot)
-                    {
-                        Position = pos,
-                        PlayerObject = player
-                    };
-                    loot.Add(corpse);
-                    if (player is not null)
-                    {
-                        player.LootObject = corpse;
-                    }
-                }
-                else if (isContainer)
-                {
-                    try
-                    {
-                        if (objectName.Equals("container_crete_04_COLLIDER(1)", StringComparison.OrdinalIgnoreCase))
-                        {
-                            loot.Add(new LootAirdrop()
-                            {
-                                Position = pos
-                            });
-                        }
-                        else
-                        {
-                            var itemOwner = Memory.ReadPtr(interactiveClass + Offsets.LootableContainer.ItemOwner);
-                            var ownerItemBase = Memory.ReadPtr(itemOwner + Offsets.LootableContainerItemOwner.RootItem);
-                            var ownerItemTemplate = Memory.ReadPtr(ownerItemBase + Offsets.LootItem.Template);
-                            var ownerItemBsgIdPtr = Memory.ReadValue<Types.MongoID>(ownerItemTemplate + Offsets.ItemTemplate._id);
-                            var ownerItemBsgId = Memory.ReadUnityString(ownerItemBsgIdPtr.StringID);
-                            bool containerOpened = Memory.ReadValue<ulong>(interactiveClass + Offsets.LootableContainer.InteractingPlayer) != 0;
-                            containers.Add(new StaticLootContainer(ownerItemBsgId, containerOpened)
-                            {
-                                Position = pos
-                            });
-                        }
-                    }
-                    catch
-                    {
-                    }
-                }
-                else if (isLooseLoot)
+                if (isLooseLoot)
                 {
                     var item = Memory.ReadPtr(interactiveClass +
                                               Offsets.InteractiveLootItem.Item); //EFT.InventoryLogic.Item
                     var itemTemplate = Memory.ReadPtr(item + Offsets.LootItem.Template); //EFT.InventoryLogic.ItemTemplate
-                    var isQuestItem = Memory.ReadValue<bool>(itemTemplate + Offsets.ItemTemplate.QuestItem);
-
                     //If NOT a quest item. Quest items are like the quest related things you need to find like the pocket watch or Jaeger's Letter etc. We want to ignore these quest items.
                     var BSGIdPtr = Memory.ReadValue<Types.MongoID>(itemTemplate + Offsets.ItemTemplate._id);
                     var id = Memory.ReadUnityString(BSGIdPtr.StringID);
-                    if (isQuestItem)
+                    if (EftDataManager.AllItems.TryGetValue(id, out var entry))
                     {
-                        QuestItem questItem;
-                        if (EftDataManager.AllItems.TryGetValue(id, out var entry))
+                        loot.Add(new LootItem(entry)
                         {
-                            questItem = new QuestItem(entry)
-                            {
-                                Position = pos
-                            };
-                        }
-                        else
-                        {
-                            var shortNamePtr = Memory.ReadPtr(itemTemplate + Offsets.ItemTemplate.ShortName);
-                            var shortName = Memory.ReadUnityString(shortNamePtr)?.Trim();
-                            if (string.IsNullOrEmpty(shortName))
-                                shortName = "Item";
-                            questItem = new QuestItem(id, $"Q_{shortName}")
-                            {
-                                Position = pos
-                            };
-                        }
-                        loot.Add(questItem);
-                    }
-                    else // Regular Loose Loot Item
-                    {
-                        if (EftDataManager.AllItems.TryGetValue(id, out var entry))
-                        {
-                            loot.Add(new LootItem(entry)
-                            {
-                                Position = pos
-                            });
-                        }
+                            Position = pos
+                        });
                     }
                 }
             }
@@ -371,12 +284,11 @@ namespace eft_dma_radar.Tarkov.Loot
                 {
                     var gridEnumerableClass =
                         Memory.ReadPtr(grid +
-                                       Offsets.Grids
-                                           .ContainedItems); // -.GClass178A->gClass1797_0x40 // Offset: 0x0040 (Type: -.GClass1797)
+                                       0x30); // -.GClass178A->gClass1797_0x40 // Offset: 0x0040 (Type: -.GClass1797)
 
                     var itemListPtr =
                         Memory.ReadPtr(gridEnumerableClass +
-                                       Offsets.GridContainedItems.Items); // -.GClass1797->list_0x18 // Offset: 0x0018 (Type: System.Collections.Generic.List<Item>)
+                                       0x18); // -.GClass1797->list_0x18 // Offset: 0x0018 (Type: System.Collections.Generic.List<Item>)
                     using var itemList = MemList<ulong>.Get(itemListPtr);
 
                     foreach (var childItem in itemList)
