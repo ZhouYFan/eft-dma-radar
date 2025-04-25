@@ -87,7 +87,7 @@ namespace eft_dma_radar.UI.SKWidgetControl
             SubpixelText = true,
             Color = SKColors.White,
             IsStroke = false,
-            TextSize = 12,
+            TextSize = 18,
             TextEncoding = SKTextEncoding.Utf8,
             IsAntialias = true,
             Typeface = CustomFonts.GetChineseTypeface(),

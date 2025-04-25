@@ -40,15 +40,15 @@ namespace eft_dma_shared.Common.Misc.Data.TarkovMarket
                             name 
                         } 
                     }
-                    questItems { 
+                    questItems(lang:zh) { 
                         id shortName 
                     }
-                    lootContainers { 
+                    lootContainers(lang:zh) { 
                         id 
                         normalizedName 
                         name 
                     }
-                    tasks {
+                    tasks (lang:zh){
                         id
                         name
                         objectives {
