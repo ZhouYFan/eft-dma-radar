@@ -139,7 +139,7 @@ namespace eft_dma_radar.Tarkov
                 try
                 {
                     FullRefresh();
-                    ResourceJanitor.Run();
+                    ResourceJanitor.Run(); // 内存占用超过90%进行清理
                     LoadProcess();
                     LoadModules();
                     _starting = true;

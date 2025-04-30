@@ -27,7 +27,7 @@ namespace radar_launcher
             string buildConfig = "Release";
             #endif
 
-            _eftRadarPath = Path.Combine(solutionDir, $@"eft-dma-radar\bin\x64\{buildConfig}\net9.0-windows\eft-dma-radar.exe");
+            _eftRadarPath = Path.Combine(solutionDir, $@"eft-dma-radar\bin\x64\{buildConfig}\net9.0-windows7.0\eft-dma-radar.exe");
             _eftRadarNonRotatedPath = Path.Combine(solutionDir, $@"eft-dma-radar-non-rotated-maps\bin\x64\{buildConfig}\net9.0-windows\eft-dma-radar-non-rotated-maps.exe");
             _arenaRadarPath = Path.Combine(solutionDir, $@"arena-dma-radar\bin\x64\{buildConfig}\net9.0-windows\arena-dma-radar.exe");
 
